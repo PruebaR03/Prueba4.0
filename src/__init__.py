@@ -1,0 +1,1 @@
+# Este archivo se deja vacío intencionalmente para marcar la carpeta src como un módulo.

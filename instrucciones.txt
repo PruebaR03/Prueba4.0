@@ -1,0 +1,95 @@
+Archivo: "Push security"
+ruta: "input/Push-Security-Deployment-Details-Colombia-2025-11-23.xlsx"
+columna criterio: "Push security enabled"
+criterio: "No"
+columna id: "Hostname"
+
+Archivo: "DLP"
+ruta: "input/Detail-Details-Colombia-2025-11-23.xlsx"
+columna criterio: "DLP"
+criterio: "Not Deploy"
+columna id: "Name"
+
+Archivo: "cifrado"
+ruta: "input/Workstations-Encryption-Details-Colombia-2025-11-23.xlsx"
+columna criterio: "Encription"
+criterio: "No"
+columna id: "Hostname"
+
+Archivo: "Crowdstrike"
+ruta: "input/crowdstrike.xlsx"
+columna criterio: "Crowdstrike"
+criterio: "Not Deploy"
+columna id: "Name"
+
+Archivo: "Netskope"
+ruta: "input/Windows-Deployment-Details-Colombia-2025-11-23.xlsx"
+columna criterio: "Deploy Text"
+criterio: "Not Deploy"
+columna id: " Hostname"
+
+Archivo: "High Risk Software"
+ruta: ""
+columna criterio: "Status"
+criterio: *Not deploy*
+columna id: "Hostname"
+
+Archivo: "Qualys"
+ruta: "input/Qualys-workstations-Details-Colombia-2025-11-23.xlsx"
+columna criterio: "In Qualys"
+criterio: "Not Deploy"
+columna id: "hostname"
+
+Archivo: "Workstations Retired"
+ruta: "input/Workstations_Retired-Details-Colombia-2025-11-23.xlsx"
+columna criterio: "CMDB Company"
+criterio: 
+columna id: "Hostname"
+
+Archivo: "Non-Phishing"
+ruta: "input/mtd.xlsx"
+columna criterio: "Methods Non Phishing Resistant"
+criterio: *[]*
+columna id: "User Principal Name"
+
+Archivo: "Windows hello"
+ruta: "input/mtd.xlsx"
+columna criterio: "Methods Registered"
+criterio: *+hello+*
+columna id: "User Principal Name"
+
+Archivo: "MFA"
+ruta: "input/mtd.xlsx"
+columna criterio: "Methods Registered"
+criterio: "[]"
+columna id: "User Principal Name"
+
+Archivo: "Ironchip"
+ruta: "input/2025-11-24 150244.720904692 +0000 UTC.csv"
+columna criterio: "Status"
+criterio: "Invited"
+columna id: "externalId"
+
+Archivo: "Harmony"
+ruta: "input/Deploy-MTD-Android-iOS-Details-Colombia-2025-11-23.xlsx"
+columna criterio: "Harmony"
+criterio: "Not deploy"
+columna id: "Username"
+
+Archivo: "MTD"
+ruta: "input/Deploy-MTD-Android-iOS-Details-Colombia-2025-11-23.xlsx"
+columna criterio: "Status"
+criterio: "Not deploy"
+columna id: "Username"
+
+Archivo: "MTD client version"
+ruta: "input/MTD-Client-Version-Details-Colombia-2025-11-23.xlsx"
+columna criterio: "Client Version Update"
+criterio: "No"
+columna id: "Username"
+
+Archivo: "Moviles"
+ruta: "input/DevicesWithInventory_5bea6c93-0ba1-4d2d-8a8a-7ca216571eb8.csv"
+columna criterio: "os"
+criterio: *+Windows+*
+columna id: "Primary user UPN"
