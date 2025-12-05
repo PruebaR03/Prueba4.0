@@ -4,7 +4,7 @@ from typing import Any, Dict
 from .lookup import VLOOKUP, LOOKUP
 from ..utils import COMP_VER
 
-# ================= Funciones Excel =================
+# Funciones Excel
 
 def IF(cond, val_true, val_false):
     try:
@@ -33,7 +33,7 @@ def STR(x):
     except Exception:
         return str(x)
 
-# ================= Traducción y evaluación =================
+# Traducción y evaluación
 
 def traducir_formula_excel(formula: str) -> str:
     """

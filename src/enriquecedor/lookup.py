@@ -3,6 +3,7 @@ import pandas as pd
 def buscar_coincidencia_parcial(valor_base, serie_externa: pd.Series):
     """
     Busca coincidencia parcial entre valor_base y valores en serie_externa.
+    Retorna índice de primera coincidencia o None.
     """
     if pd.isna(valor_base):
         return None
@@ -17,6 +18,7 @@ def buscar_coincidencia_parcial(valor_base, serie_externa: pd.Series):
         val_ext_str = str(val_ext).lower().strip()
         if not val_ext_str:
             continue
+        # Coincidencia bidireccional: "A" in "B" o "B" in "A"
         if valor_base_str in val_ext_str or val_ext_str in valor_base_str:
             return idx
     
@@ -25,6 +27,7 @@ def buscar_coincidencia_parcial(valor_base, serie_externa: pd.Series):
 def VLOOKUP(valor, hoja_rango, col_key_letra, col_val_letra, cache_hojas: dict, exact=True):
     """
     Implementación de VLOOKUP para fórmulas Excel.
+    Busca valor en columna key y retorna valor de columna val.
     """
     hoja_norm = str(hoja_rango).strip().strip("'").strip('"').lower()
     if hoja_norm not in cache_hojas:
@@ -52,7 +55,7 @@ def VLOOKUP(valor, hoja_rango, col_key_letra, col_val_letra, cache_hojas: dict, 
 
 def LOOKUP(hoja, col_key, valor, col_val, cache_hojas: dict, exact=True):
     """
-    Búsqueda por nombre de columna.
+    Búsqueda por nombre de columna (más flexible que VLOOKUP).
     """
     hoja_norm = str(hoja).strip().strip('"').strip("'").lower()
     if hoja_norm not in cache_hojas:
@@ -81,7 +84,8 @@ def LOOKUP(hoja, col_key, valor, col_val, cache_hojas: dict, exact=True):
 
 def _excel_col_a_indice(letra: str) -> int:
     """
-    Convierte letra de columna Excel (A, B, AA) a índice numérico.
+    Convierte letra de columna Excel (A, B, AA) a índice numérico (0-based).
+    Ejemplo: A=0, B=1, Z=25, AA=26
     """
     letra = str(letra).strip().upper()
     total = 0

@@ -1,5 +1,5 @@
 name: "Resumen Cyber BSNC"
-identificadores: "BS de Negocios Colombia", "Santander Caceis Colombia", "Santander Colombia", "SNC", "SEC", "SBI"
+identificadores: "BS de Negocios Colombia", "Santander Colombia", "SNC", "SEC", "SBI"
 
 name: "Resumen Cyber SF"
 identificadores: "Santander Financing Colombia", "Santander Consumer Finance Colombia", "financing", "N/A", "CO2"
@@ -9,6 +9,9 @@ hoja: "Push security"
 columna id: "company"
 
 hoja: "DLP"
+columna id: "company"
+
+hoja: "cifrado"
 columna id: "company"
 
 hoja: "Crowdstrike"
@@ -23,8 +26,8 @@ columna id: "company"
 hoja: "Qualys"
 columna id: "company"
 
-hoja: "Worskatations Retired"
-columna id: "company"
+hoja: "Workstations Retired"
+columna id: "AD Company"
 
 hoja: "Non-Phishing"
 columna id: "company"

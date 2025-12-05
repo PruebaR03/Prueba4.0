@@ -1,7 +1,9 @@
 import os
 import re
 import pandas as pd
+from openpyxl import load_workbook
 from ..core import limpiar_ruta, leer_configuracion_enriquecimiento, leer_excel_o_csv
+from ..core.file_utils import aplicar_formato_encabezados, colorear_pestanas_resumen
 from ..utils import parse_lista_columnas
 from .lookup import buscar_coincidencia_parcial
 from .formula_engine import evaluar_formula
@@ -22,6 +24,7 @@ def _preparar_cache_lookup(excel_base: pd.ExcelFile):
 def enriquecer_hojas(ruta_excel: str, ruta_configuracion: str):
     """
     Enriquece hojas Excel con datos externos y fórmulas calculadas.
+    Soporta enriquecimiento de hojas de resumen.
     """
     data_conf = leer_configuracion_enriquecimiento(ruta_configuracion)
     bloques = data_conf["bloques"]
@@ -29,10 +32,19 @@ def enriquecer_hojas(ruta_excel: str, ruta_configuracion: str):
 
     ruta_excel = limpiar_ruta(ruta_excel)
     if not os.path.exists(ruta_excel):
-        print(f"Excel base no existe: {ruta_excel}")
+        print(f"❌ Excel base no existe: {ruta_excel}")
         return
 
     try:
+        print("\n" + "═" * 70)
+        print("🔧 INICIANDO ENRIQUECIMIENTO DE DATOS")
+        print("═" * 70)
+        
+        if parametros:
+            print(f"\n⚙️  Parámetros globales configurados: {len(parametros)}")
+            for k, v in parametros.items():
+                print(f"   • {k} = {v}")
+        
         excel_base = pd.ExcelFile(ruta_excel)
         hojas_existentes = set(excel_base.sheet_names)
         _preparar_cache_lookup(excel_base)
@@ -45,16 +57,30 @@ def enriquecer_hojas(ruta_excel: str, ruta_configuracion: str):
                 continue
             bloques_por_hoja.setdefault(hoja, []).append(b)
 
+        print(f"\n📋 Total de hojas a enriquecer: {len(bloques_por_hoja)}")
+        
         with pd.ExcelWriter(ruta_excel, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
-            for hoja, lista_ops in bloques_por_hoja.items():
+            for idx, (hoja, lista_ops) in enumerate(bloques_por_hoja.items(), 1):
                 if hoja not in hojas_existentes:
-                    print(f"Hoja '{hoja}' no existe. Omitida.")
+                    print(f"\n  ⚠️  Hoja '{hoja}' no existe → Omitida")
                     continue
 
                 df_base = excel_base.parse(hoja)
-                df_base.columns = [str(c).strip().lower() for c in df_base.columns]
+                # Normalizar columnas eliminando comillas
+                df_base.columns = [str(c).strip().strip('"').strip("'").strip().lower() for c in df_base.columns]
 
-                print(f"Procesando hoja '{hoja}' con {len(lista_ops)} bloque(s)...")
+                # Detectar si es una hoja de resumen
+                es_resumen = hoja.startswith("Resumen")
+                if es_resumen:
+                    print(f"\n" + "─" * 70)
+                    print(f"📊 [{idx}/{len(bloques_por_hoja)}] Enriqueciendo RESUMEN: {hoja}")
+                    print(f"   🔧 {len(lista_ops)} operacion(es) configurada(s)")
+                    print("─" * 70)
+                else:
+                    print(f"\n" + "─" * 70)
+                    print(f"📄 [{idx}/{len(bloques_por_hoja)}] Enriqueciendo: {hoja}")
+                    print(f"   🔧 {len(lista_ops)} operacion(es) configurada(s)")
+                    print("─" * 70)
 
                 for cfg in lista_ops:
                     # Enriquecimiento desde archivo externo
@@ -63,12 +89,35 @@ def enriquecer_hojas(ruta_excel: str, ruta_configuracion: str):
                     # Aplicar fórmulas calculadas
                     _aplicar_calculos(df_base, cfg, parametros, _cache_hojas_lookup)
 
-                df_base.to_excel(writer, sheet_name=hoja, index=False)
-                print(f"Hoja '{hoja}' escrita/enriquecida.")
+                # Solo reordenar columnas en resúmenes: ID, Employee ID, luego el resto
+                if es_resumen:
+                    cols_base = []
+                    if "id" in df_base.columns:
+                        cols_base.append("id")
+                    if "employee id" in df_base.columns:
+                        cols_base.append("employee id")
+                    otras_cols = sorted([c for c in df_base.columns if c not in cols_base])
+                    df_base = df_base[cols_base + otras_cols]
+                    print(f"  📋 Columnas reordenadas en resumen: {', '.join(cols_base)}")
 
-        print("Enriquecimiento finalizado.")
+                df_base.to_excel(writer, sheet_name=hoja, index=False)
+                print(f"  ✅ Hoja '{hoja}' guardada")
+
+        # Aplicar formato
+        print(f"\n🎨 Aplicando formato visual...")
+        wb = load_workbook(ruta_excel)
+        aplicar_formato_encabezados(wb)
+        
+        # Colorear pestañas de hojas resumen
+        colorear_pestanas_resumen(wb)
+        
+        wb.save(ruta_excel)
+        
+        print("\n" + "═" * 70)
+        print("✅ ENRIQUECIMIENTO COMPLETADO")
+        print("═" * 70 + "\n")
     except Exception as e:
-        print(f"Error enriqueciendo: {e}")
+        print(f"\n❌ Error durante enriquecimiento: {e}\n")
 
 def _enriquecer_desde_archivo(df_base: pd.DataFrame, cfg: dict, cache_hojas: dict):
     """
@@ -81,17 +130,40 @@ def _enriquecer_desde_archivo(df_base: pd.DataFrame, cfg: dict, cache_hojas: dic
 
     columna_base_norm = columna_base.lower() if columna_base else ""
 
-    if not (ruta_ext and os.path.exists(ruta_ext) and columna_cruzar):
+    # Logging de depuración
+    print(f"\n  🔍 Verificando configuración de enriquecimiento:")
+    print(f"     • Columna base: '{columna_base}' (norm: '{columna_base_norm}')")
+    print(f"     • Ruta externa: '{ruta_ext}'")
+    print(f"     • Columna cruzar: '{columna_cruzar}'")
+    print(f"     • Columnas extraer: '{columnas_extraer_raw}'")
+
+    if not ruta_ext:
+        print(f"     ⚠️  No hay ruta de archivo externo configurada")
+        return
+    
+    if not os.path.exists(ruta_ext):
+        print(f"     ❌ Archivo externo no existe: {ruta_ext}")
+        return
+    
+    if not columna_cruzar:
+        print(f"     ⚠️  No hay columna de cruce configurada")
         return
 
+    print(f"\n  🔗 Enriquecimiento desde archivo externo:")
+    print(f"     📂 {os.path.basename(ruta_ext)}")
+    
     # Leer archivo externo
     hoja_lookup = (cfg.get("hoja lookup") or cfg.get("hoja externa") or "").strip().strip('"').strip("'")
     df_ext = leer_excel_o_csv(ruta_ext, hoja=hoja_lookup if hoja_lookup else None)
     
     if df_ext is None:
+        print(f"     ❌ No se pudo leer el archivo externo")
         return
 
-    df_ext.columns = [str(c).strip().lower() for c in df_ext.columns]
+    # Normalizar columnas eliminando comillas
+    df_ext.columns = [str(c).strip().strip('"').strip("'").strip().lower() for c in df_ext.columns]
+    
+    print(f"     📊 Columnas del archivo externo: {list(df_ext.columns)[:10]}")
     
     # Agregar al caché con alias
     alias_cfg = (cfg.get("alias lookup") or "").strip().strip('"').strip("'")
@@ -107,14 +179,25 @@ def _enriquecer_desde_archivo(df_base: pd.DataFrame, cfg: dict, cache_hojas: dic
     # Validar columnas
     columna_cruzar_norm = columna_cruzar.lower()
     columnas_extraer = parse_lista_columnas(columnas_extraer_raw)
+    
+    print(f"     🔍 Buscando columna cruzar: '{columna_cruzar_norm}'")
+    print(f"     🔍 Columnas a extraer: {columnas_extraer}")
+    
     faltantes = [c for c in columnas_extraer if c not in df_ext.columns]
     
-    if columna_cruzar_norm not in df_ext.columns or faltantes:
-        print(f"  ⚠ Columnas inválidas en archivo externo")
+    if columna_cruzar_norm not in df_ext.columns:
+        print(f"     ❌ Columna cruzar '{columna_cruzar_norm}' no existe en archivo externo")
+        print(f"     💡 Columnas disponibles: {list(df_ext.columns)}")
+        return
+    
+    if faltantes:
+        print(f"     ❌ Columnas faltantes en archivo externo: {faltantes}")
+        print(f"     💡 Columnas disponibles: {list(df_ext.columns)}")
         return
     
     if columna_base_norm and columna_base_norm not in df_base.columns:
-        print(f"  ⚠ Columna base '{columna_base_norm}' no existe")
+        print(f"     ❌ Columna base '{columna_base_norm}' no existe en hoja base")
+        print(f"     💡 Columnas disponibles en hoja: {list(df_base.columns)}")
         return
 
     # Agregar columnas si no existen
@@ -127,6 +210,8 @@ def _enriquecer_desde_archivo(df_base: pd.DataFrame, cfg: dict, cache_hojas: dic
         base_series = df_base[columna_base_norm]
         coincidencias = 0
         
+        print(f"     🔄 Buscando coincidencias entre '{columna_base_norm}' y '{columna_cruzar_norm}'...")
+        
         for idx_base, valor_base in base_series.items():
             idx_match = buscar_coincidencia_parcial(valor_base, df_ext[columna_cruzar_norm])
             if idx_match is not None:
@@ -134,7 +219,10 @@ def _enriquecer_desde_archivo(df_base: pd.DataFrame, cfg: dict, cache_hojas: dic
                 for col_extraer in columnas_extraer:
                     df_base.at[idx_base, col_extraer] = df_ext.at[idx_match, col_extraer]
         
-        print(f"  → {coincidencias} coincidencias encontradas (archivo: {os.path.basename(ruta_ext)})")
+        print(f"     ✅ {coincidencias} coincidencia(s) encontrada(s) de {len(df_base)} filas")
+        print(f"     📊 Columnas agregadas: {', '.join(columnas_extraer)}")
+    else:
+        print(f"     ⚠️  No hay columna base configurada, no se puede enriquecer")
 
 def _aplicar_calculos(df_base: pd.DataFrame, cfg: dict, parametros: dict, cache_hojas: dict):
     """
@@ -145,7 +233,7 @@ def _aplicar_calculos(df_base: pd.DataFrame, cfg: dict, parametros: dict, cache_
     if not calculos:
         return
 
-    print(f"  Aplicando {len(calculos)} fórmula(s)...")
+    print(f"\n  🧮 Aplicando fórmulas calculadas: {len(calculos)}")
     
     for calc in calculos:
         nombre = calc["nombre"]
@@ -159,4 +247,4 @@ def _aplicar_calculos(df_base: pd.DataFrame, cfg: dict, parametros: dict, cache_
             resultados.append(val)
         
         df_base[nombre] = resultados
-        print(f"    ✓ '{nombre}' aplicada")
+        print(f"     ✅ '{nombre}' → {formula[:50]}{'...' if len(formula) > 50 else ''}")

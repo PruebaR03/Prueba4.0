@@ -4,14 +4,12 @@ from typing import Tuple, List
 _version_split_regex = re.compile(r'[._,\-]')
 
 def _version_to_tuple(s) -> Tuple[int, ...] | None:
-    """
-    Convierte string de versión a tupla de números.
-    """
+    """Convierte string de versión a tupla de números para comparación."""
     s = "" if s is None else str(s).strip()
     if not s or s.upper() == "N/A":
         return None
     
-    # Eliminar prefijos comunes
+    # Limpiar prefijos como "android 14", "ios 17", "windows 11"
     s = re.sub(r'^\s*(android|ios|ipad os|windows)\s*', '', s, flags=re.IGNORECASE)
     parts = _version_split_regex.split(s)
     nums: List[int] = []
@@ -44,7 +42,7 @@ def COMP_VER(a, b) -> int:
     tb = _version_to_tuple(b)
     
     if ta is None or tb is None:
-        # Fallback a comparación numérica simple
+        # Fallback: comparar primer número encontrado
         try:
             na = int(re.search(r'\d+', str(a)).group(0))
         except Exception:

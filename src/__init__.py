@@ -1,1 +1,1 @@
-# Este archivo se deja vacío intencionalmente para marcar la carpeta src como un módulo.
+# Archivo para marcar la carpeta src como módulo Python.

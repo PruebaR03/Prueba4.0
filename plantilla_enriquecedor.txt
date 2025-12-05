@@ -16,7 +16,7 @@ Parametro: version_ios_deprecada = 17
 
 Hoja: "Qualys"
 Columna base: "hostname"
-Ruta: "input/cmdb_ci_computer (26).xlsx"
+Ruta: "input/cmdb_ci_computer (27).xlsx"
 Columna cruzar: "Name"
 Columna extraer: "status" + "status reason"
 
@@ -25,21 +25,21 @@ Columna base: "username"
 Ruta: "input/USER(NO QUITAR, CAMBIAR).xlsx"
 Columna cruzar: "Usuario"
 Columna extraer: "Nombre" + "OU"
-Columna calcular: nombre_formateado = SI.ERROR( Nombre & " (" & OU & ")"; "N/A" )
+
 
 Hoja: "MTD"
 Columna base: "username"
 Ruta: "input/USER(NO QUITAR, CAMBIAR).xlsx"
 Columna cruzar: "Usuario"
 Columna extraer: "Nombre"
-Columna calcular: estado_usuario = SI( Nombre=""; "SIN NOMBRE"; "OK" )
+
 
 Hoja: "MTD client version"
 Columna base: "username"
 Ruta: "input/USER(NO QUITAR, CAMBIAR).xlsx"
 Columna cruzar: "Usuario"
 Columna extraer: "Nombre"
-Columna calcular: etiqueta = "Usuario: " & Nombre
+
 
 # ================== MOVILES ==================
 # 1) Última actualización por modelo
@@ -60,7 +60,19 @@ Hoja: "Moviles"
 Columna base: "primary user upn"
 Ruta: "input/USER(NO QUITAR, CAMBIAR).xlsx"
 Columna cruzar: "Usuario"
-Columna extraer: "OU"
+Columna extraer: "OU" 
+
+# ================== ENRIQUECIMIENTO DE HOJAS RESUMEN ==================
+# Los resúmenes se pueden enriquecer igual que cualquier otra hoja
+# La columna "ID" del resumen se usa como columna base
+
+Hoja: "Resumen_Workstations"
+Columna base: "ID"
+Ruta: "input/cmdb_ci_computer (27).xlsx"
+Columna cruzar: "Name"
+Columna extraer: "Employee ID" + "Assigned to"
+
+
 
 # ================== LOOKUP DE REFERENCIA (opcional) ==================
 Hoja: "CatalogoVersiones"
@@ -68,6 +80,8 @@ Columna base: "primary user upn"
 Ruta: "input/catalogo_versiones.xlsx"
 Columna cruzar: "modelo"
 Columna extraer: "version_minima"
+
+
 
 # ================== EJEMPLO SOLO FÓRMULAS ==================
 Hoja: "EjemploSoloFormulas"
