@@ -47,16 +47,19 @@ def formato_cambio(n_actual: int, n_anterior: int) -> tuple:
     diferencia = n_actual - n_anterior
     
     if diferencia > 0:
-        simbolo = "="
+        # Aumento: flecha arriba en rojo
+        simbolo = "↑"
         color = RGBColor(192, 0, 0)
         texto = f"{simbolo} {n_actual} con respecto a la semana pasada ({n_anterior})"
         es_aumento = True
     elif diferencia < 0:
+        # Disminución: flecha abajo en verde
         simbolo = "↓"
         color = RGBColor(0, 128, 0)
         texto = f"{simbolo} {n_actual} con respecto a la semana pasada ({n_anterior})"
         es_aumento = False
     else:
+        # Sin cambio: símbolo "=" en azul
         simbolo = "="
         color = RGBColor(0, 112, 192)
         texto = f"{simbolo} {n_actual} sin cambios respecto a la semana pasada ({n_anterior})"

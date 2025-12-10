@@ -133,6 +133,12 @@ def flujo_separacion(ruta_excel: str, ruta_configuracion: str, carpeta_salida: s
                 for hoja_cfg in config['hojas']:
                     hoja = hoja_cfg.get('hoja')
                     col_sep = hoja_cfg.get('columna_id', '').strip()
+                    exclusivo_para = hoja_cfg.get('exclusivo_para')
+                    
+                    # ✅ VERIFICAR SI LA HOJA ES EXCLUSIVA PARA OTRO ARCHIVO
+                    if exclusivo_para and exclusivo_para.lower() != nombre_salida.lower():
+                        print(f"     ⊘ Hoja '{hoja}': Exclusiva para '{exclusivo_para}' (omitida)")
+                        continue
                     
                     if not hoja or not col_sep or hoja not in hojas_existentes:
                         continue

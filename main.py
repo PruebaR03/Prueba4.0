@@ -256,7 +256,7 @@ def generar_ppt_solo():
 
     ruta_salida_ppt = input("📄 Ruta de salida para el PPT (ej: output/comparativo.pptx): ").strip()
     if not ruta_salida_ppt:
-        ruta_salida_ppt = "output/comparativo_resultado.pptx"
+        ruta_salida_ppt = "output/PPTGENERADO.pptx"
     # Validar que termine en .pptx
     if not ruta_salida_ppt.lower().endswith('.pptx'):
         # Agregar .pptx solo si no termina en eso
