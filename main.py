@@ -6,34 +6,62 @@ RESET = "\033[0m"
 
 from src.procesador import generar_excel_salida, crear_hoja_resumen
 from src.enriquecedor import enriquecer_hojas, limpiar_datos_enriquecidos
+from src.enriquecedor.lector_csv import generacion_softerra
 from src.separador import flujo_separacion
 from src.core.file_utils import limpiar_ruta
 from src.ppt.ppt_comparador import generar_ppt_comparativo
+from src.cumplimiento.cumplimiento import ejecutar_cruces_y_calculos_desde_plantilla, run_checks_from_template
 import os
+import pandas as pd
 import glob
+
+ruta_instrucciones = None
+ruta_salida= None
+ruta_configuracion= None
+ruta_config_separacion= None
+carpeta_salida = None
+ruta_config_limpieza= None
+ruta_excel_actual =None
+ruta_excel_anterior =None
+ruta_plantilla= None
+ruta_salida_ppt= None
+
 
 def main():
     print(f"{CYAN}╔════════════════════════════════════════════════════════════╗")
     print(f"║              Bienvenido a BatXcel 🐍📊                     ║")
     print(f"╚════════════════════════════════════════════════════════════╝{RESET}")
     print("\nEste programa te ayudará a procesar y enriquecer archivos Excel.")
-    print("Por favor, sigue las instrucciones para configurar tus archivos.\n")
+    print("Por favor, sigue las instrucciones para configurar tus archivos.")
+    print("Ejecute las opciones en orden ascendente, si desea exceptuar pasos de tipo OPCIONAL, continue al siguiente paso.\n")
 
     try:
         print(f"{YELLOW}{'═' * 60}")
         print(f"MENÚ PRINCIPAL")
         print(f"{'═' * 60}{RESET}")
-        print("1. Procesar Excel (Pasos 1-3)")
-        print("2. Generar presentación PPT comparativa")
-        print("3. Salir")
+        print("1. Generar archivo Excel base y hoja resumen")
+        print("2. Enriquecer archivo Excel (OPCIONAL)")
+        print("3. Separar Excel en múltiples archivos (OPCIONAL)")
+        print("4. Limpieza de datos enriquecidos (OPCIONAL)")
+        print("5. Generar resumen de cumplimiento (OPCIONAL)")
+        print("6. Generar presentación PPT comparativa")
+        print("7. Salir")
         
-        opcion = input(f"\n{YELLOW}Selecciona una opción (1/2/3): {RESET}").strip()
+        opcion = input(f"\n{YELLOW}Selecciona una opción: {RESET}").strip()
         
         if opcion == "1":
-            procesar_excel_completo()
+            generacion_archivo_base_resumen()
         elif opcion == "2":
-            generar_ppt_solo()
+            enriquecer()
         elif opcion == "3":
+            separacion()
+        elif opcion == "4":
+            limpieza()
+        elif opcion =="5":
+            porcentajes_cumplimiento()
+        elif opcion =="6":
+            generar_ppt_solo()
+        elif opcion == "7":
             print(f"{GREEN}Gracias por usar BatXcel. ¡Hasta luego!{RESET}")
             return
         else:
@@ -52,15 +80,15 @@ def main():
         print(f"║                     Proceso finalizado                    ║")
         print(f"╚════════════════════════════════════════════════════════════╝{RESET}")
 
-def procesar_excel_completo():
-    """Flujo completo de procesamiento: Pasos 1-3 y opcionalmente PPT."""
+def generacion_archivo_base_resumen():
     
     # PASO 1: Generación de archivo base y resumen
     print(f"\n{GREEN}{'═' * 60}")
     print(f"PASO 1: Generar archivo Excel base")
     print(f"{'═' * 60}{RESET}")
-    
+    global ruta_instrucciones
     ruta_instrucciones = input("📝 Ruta del archivo de instrucciones: ").strip()
+    global ruta_salida
     ruta_salida = input("📂 Ruta del archivo Excel de salida: ").strip()
     
     generar_excel_salida(ruta_instrucciones, ruta_salida)
@@ -72,153 +100,134 @@ def procesar_excel_completo():
     
     crear_hoja_resumen(ruta_salida, ruta_instrucciones)
     print(f"{GREEN}✓ Hoja(s) resumen creada(s) exitosamente{RESET}\n")
+    print(f"  ✓ Archivo base generado: {ruta_salida}")
 
+def enriquecer():
     # PASO 2: Enriquecimiento opcional
     print(f"{YELLOW}{'═' * 60}")
     print(f"PASO 2: Enriquecer archivo Excel (OPCIONAL)")
     print(f"{'═' * 60}{RESET}")
-    
-    enriquecer = input(f"{YELLOW}¿Desea enriquecer el archivo Excel? (s/n): {RESET}").strip().lower()
-    
-    if enriquecer == 's':
-        ruta_configuracion = input("📝 Ruta del archivo de configuración para enriquecimiento: ").strip()
-        ruta_configuracion = limpiar_ruta(ruta_configuracion)
+    global ruta_configuracion
+    ruta_configuracion = input("📝 Ruta del archivo de configuración para enriquecimiento: ").strip()
+    ruta_configuracion = limpiar_ruta(ruta_configuracion)
         
-        if not os.path.exists(ruta_configuracion):
-            print(f"{RED}✗ Archivo de configuración no encontrado: {ruta_configuracion}")
-            print(f"⚠️  Saltando enriquecimiento...{RESET}\n")
-        else:
-            enriquecer_hojas(ruta_salida, ruta_configuracion)
-            print(f"{GREEN}✓ Archivo Excel enriquecido exitosamente{RESET}\n")
+    if not os.path.exists(ruta_configuracion):
+        print(f"{RED}✗ Archivo de configuración no encontrado: {ruta_configuracion}")
+        print(f"⚠️  Saltando enriquecimiento...{RESET}\n")
     else:
-        print(f"{YELLOW}⊘ Paso 2 omitido. No se realizó enriquecimiento.{RESET}\n")
+        generacion_softerra()
+        enriquecer_hojas(ruta_salida, ruta_configuracion)
+        print(f"{GREEN}✓ Archivo Excel enriquecido exitosamente{RESET}\n")
 
+    print(f"  ✓ Enriquecimiento aplicado")
+   
+def separacion():
     # PASO 3: Separación opcional
-    carpeta_salida = None
+    
     print(f"{YELLOW}{'═' * 60}")
     print(f"PASO 3: Separar Excel en múltiples archivos (OPCIONAL)")
     print(f"{'═' * 60}{RESET}")
     
-    separar = input(f"{YELLOW}¿Desea separar el Excel según identificadores? (s/n): {RESET}").strip().lower()
-
-    if separar == 's':
-        ruta_config_separacion = input("📝 Ruta del archivo de configuración para separación: ").strip()
-        ruta_config_separacion = limpiar_ruta(ruta_config_separacion)
+    global ruta_config_separacion
+    ruta_config_separacion = input("📝 Ruta del archivo de configuración para separación: ").strip()
+    ruta_config_separacion = limpiar_ruta(ruta_config_separacion)
         
-        if not os.path.exists(ruta_config_separacion):
-            print(f"{RED}✗ Archivo de configuración no encontrado: {ruta_config_separacion}")
-            print(f"⚠️  Saltando separación...{RESET}\n")
-        else:
-            carpeta_salida = input("📂 Carpeta de salida para archivos separados (Enter=output/separados): ").strip() or "output/separados"
+    if not os.path.exists(ruta_config_separacion):
+        print(f"{RED}✗ Archivo de configuración no encontrado: {ruta_config_separacion}")
+        print(f"⚠️  Saltando separación...{RESET}\n")
+    else:
+        global carpeta_salida
+        carpeta_salida = input("📂 Carpeta de salida para archivos separados (Enter=output/separados): ").strip() or "output/separados"
+        
+        flujo_separacion(ruta_salida, ruta_config_separacion, carpeta_salida, ruta_instrucciones)
+        print(f"{GREEN}✓ Archivos separados generados exitosamente{RESET}")
+        print(f"{GREEN}ℹ️  Las hojas ya contienen el enriquecimiento del archivo base{RESET}\n")
             
-            flujo_separacion(ruta_salida, ruta_config_separacion, carpeta_salida, ruta_instrucciones)
-            print(f"{GREEN}✓ Archivos separados generados exitosamente{RESET}")
-            print(f"{GREEN}ℹ️  Las hojas ya contienen el enriquecimiento del archivo base{RESET}\n")
-            
+    print(f"  ✓ Archivos separados generados en: {carpeta_salida}")
+
+def limpieza():
             print(f"{YELLOW}{'─' * 60}")
-            print(f"PASO 3.1: Limpieza de datos enriquecidos (OPCIONAL)")
+            print(f"PASO 4: Limpieza de datos enriquecidos (OPCIONAL)")
             print(f"{'─' * 60}{RESET}")
             print(f"{YELLOW}ℹ️  Elimina filas según criterios en TODOS los archivos separados.")
             print(f"   Ejemplo: Eliminar dispositivos actualizados y compliant.{RESET}")
             
-            limpiar_separados = input(f"{YELLOW}¿Desea limpiar datos enriquecidos? (s/n): {RESET}").strip().lower()
-            
-            if limpiar_separados == 's':
-                ruta_config_limpieza = input("📝 Ruta del archivo de configuración para limpieza: ").strip()
-                ruta_config_limpieza = limpiar_ruta(ruta_config_limpieza)
+            global ruta_config_limpieza
+
+            ruta_config_limpieza = input("📝 Ruta del archivo de configuración para limpieza: ").strip()
+            ruta_config_limpieza = limpiar_ruta(ruta_config_limpieza)
                 
-                if not os.path.exists(ruta_config_limpieza):
-                    print(f"{RED}✗ Archivo de configuración no encontrado: {ruta_config_limpieza}{RESET}\n")
-                else:
-                    print(f"\n{GREEN}{'═' * 70}")
-                    print(f"🧹 LIMPIANDO ARCHIVOS SEPARADOS")
-                    print(f"{'═' * 70}{RESET}")
-                    
-                    archivos_separados = glob.glob(os.path.join(carpeta_salida, "*.xlsx"))
-                    
-                    print(f"\n📂 Carpeta: {carpeta_salida}")
-                    print(f"📋 Archivos a limpiar: {len(archivos_separados)}\n")
-                    
-                    for idx, archivo in enumerate(archivos_separados, 1):
-                        print(f"[{idx}/{len(archivos_separados)}] ", end="")
-                        try:
-                            limpiar_datos_enriquecidos(archivo, ruta_config_limpieza)
-                        except Exception as e:
-                            print(f"  {RED}⚠️ Error: {e}{RESET}")
-                    
-                    print(f"\n{GREEN}{'═' * 70}")
-                    print(f"✅ LIMPIEZA COMPLETADA")
-                    print(f"{'═' * 70}{RESET}\n")
+            if not os.path.exists(ruta_config_limpieza):
+                print(f"{RED}✗ Archivo de configuración no encontrado: {ruta_config_limpieza}{RESET}\n")
             else:
-                print(f"{YELLOW}⊘ Limpieza omitida.{RESET}\n")
+                print(f"\n{GREEN}{'═' * 70}")
+                print(f"🧹 LIMPIANDO ARCHIVOS SEPARADOS")
+                print(f"{'═' * 70}{RESET}")
+                global carpeta_salida
+                carpeta_salida = limpiar_ruta(carpeta_salida)
+                archivos_separados = glob.glob(os.path.join(carpeta_salida, "*.xlsx"))
+                    
+                print(f"\n📂 Carpeta: {carpeta_salida}")
+                print(f"📋 Archivos a limpiar: {len(archivos_separados)}\n")
+                    
+                for idx, archivo in enumerate(archivos_separados, 1):
+                    print(f"[{idx}/{len(archivos_separados)}] ", end="")
+                    try:
+                        limpiar_datos_enriquecidos(archivo, ruta_config_limpieza)
+                    except Exception as e:
+                        print(f"  {RED}⚠️ Error: {e}{RESET}")
+                    
+                print(f"\n{GREEN}{'═' * 70}")
+                print(f"✅ LIMPIEZA COMPLETADA")
+                print(f"{'═' * 70}{RESET}\n")
+            
+
+def porcentajes_cumplimiento():
+    cruces_in = input("Introduce la ruta al archivo de plantilla cruces: ").strip().replace('"', '')
+    if os.path.exists(cruces_in):
+        cruces_path = cruces_in
+        cruces_path = limpiar_ruta(cruces_path)
+
+    user_in = input("Introduce la ruta al archivo de plantilla cumplimiento: ").strip().replace('"', '')
+    if os.path.exists(user_in):
+        template_path = user_in
+        template_path = limpiar_ruta(template_path)
     else:
-        print(f"{YELLOW}⊘ Paso 3 omitido. No se realizó separación.{RESET}\n")
+        print(f"No se encontró el archivo: {user_in}. Intenta de nuevo.")
 
-    print(f"{CYAN}╔════════════════════════════════════════════════════════════╗")
-    print(f"║         ✓ PROCESO COMPLETADO EXITOSAMENTE ✓               ║")
-    print(f"╚════════════════════════════════════════════════════════════╝{RESET}")
+    if template_path is None:
+        print("No hay plantilla a procesar. Saliendo.")
+
+    print(f"procesando plantilla: {cruces_path}")
     
-    print(f"\n{GREEN}📊 Resumen de operaciones:{RESET}")
-    print(f"  ✓ Archivo base generado: {ruta_salida}")
-    if enriquecer == 's':
-        print(f"  ✓ Enriquecimiento aplicado")
-    if separar == 's':
-        print(f"  ✓ Archivos separados generados en: {carpeta_salida}")
-    print()
+    ejecutar_cruces_y_calculos_desde_plantilla(cruces_path)
 
-    # PASO 4: Generación de PPT comparativo
-    generar_ppt = input(f"{YELLOW}¿Desea generar presentación comparativa (PPT)? (s/n): {RESET}").strip().lower()
-    if generar_ppt == 's':
-        # Si se ejecutó paso 3 (separación), usar esa carpeta como actual
-        # Si NO se ejecutó paso 3, pedir la ruta del Excel actual (separados)
-        if carpeta_salida:
-            carpeta_actual = carpeta_salida
-            print(f"\n📂 Usando carpeta actual: {carpeta_actual}")
-        else:
-            carpeta_actual = input(f"\n📂 Carpeta con archivos separados actuales (obligatorio): ").strip()
-            carpeta_actual = limpiar_ruta(carpeta_actual)
-        
-        # Siempre pedir la carpeta anterior
-        carpeta_anterior = input("📂 Carpeta con archivos de la semana pasada (obligatorio): ").strip()
-        carpeta_anterior = limpiar_ruta(carpeta_anterior)
+    print(f"Procesando plantilla: {template_path}")
+    
+    df_summary_bsc, df_summary_sf = run_checks_from_template(template_path)
+    pd.set_option("display.max_columns", None)
+    print("\nResumen de cumplimiento:\n")
 
-        ruta_plantilla = input("🖼️ Ruta del archivo plantilla PPTX (obligatorio): ").strip()
-        ruta_plantilla = limpiar_ruta(ruta_plantilla)
 
-        ruta_salida_ppt = input("📄 Ruta de salida para el PPT generado (ej: output/comparativo.pptx): ").strip()
-        if not ruta_salida_ppt:
-            ruta_salida_ppt = "output/comparativo_resultado.pptx"
-        # Validar que termine en .pptx
-        if not ruta_salida_ppt.lower().endswith('.pptx'):
-            ruta_salida_ppt = ruta_salida_ppt.rstrip('\\').rstrip('/') + "/comparativo_resultado.pptx"
-        ruta_salida_ppt = limpiar_ruta(ruta_salida_ppt)
+    print(df_summary_bsc.to_string(index=False))
+    out_csv_bsc = "output/resumen_cumplimiento_bsc.xlsx"
+    df_summary_bsc.to_excel(out_csv_bsc, index=False)
+    print(f"\nGuardado: {out_csv_bsc}")
 
-        # Validaciones
-        if not os.path.exists(carpeta_actual):
-            print(f"{RED}✗ Carpeta actual no encontrada: {carpeta_actual}{RESET}")
-        elif not os.path.exists(carpeta_anterior):
-            print(f"{RED}✗ Carpeta anterior no encontrada: {carpeta_anterior}{RESET}")
-        elif not os.path.exists(ruta_plantilla):
-            print(f"{RED}✗ Plantilla PPT no encontrada: {ruta_plantilla}{RESET}")
-        else:
-            # Asegurar que la carpeta de salida existe (solo la carpeta, no el archivo)
-            carpeta_salida_ppt = os.path.dirname(ruta_salida_ppt)
-            if carpeta_salida_ppt and carpeta_salida_ppt.strip():
-                os.makedirs(carpeta_salida_ppt, exist_ok=True)
-            try:
-                print(f"\n{GREEN}Generando presentación comparativa...{RESET}")
-                generar_ppt_comparativo(carpeta_actual, carpeta_anterior, ruta_plantilla, ruta_salida_ppt)
-            except Exception as e:
-                print(f"{RED}✗ Error generando PPT: {e}{RESET}")
+    print(df_summary_sf.to_string(index=False))
+    out_csv_sf = "output/resumen_cumplimiento_sf.xlsx"
+    df_summary_sf.to_excel(out_csv_sf, index=False)
+    print(f"\nGuardado: {out_csv_sf}")
 
 def generar_ppt_solo():
-    """Genera PPT comparativo sin ejecutar los pasos 1-3."""
+    """Genera PPT comparativo"""
     
     print(f"\n{CYAN}{'═' * 60}")
     print(f"GENERADOR DE PRESENTACIÓN COMPARATIVA")
     print(f"{'═' * 60}{RESET}\n")
     
     while True:
+        global ruta_excel_actual
         ruta_excel_actual = input("📄 Ruta del Excel ACTUAL: ").strip()
         ruta_excel_actual = limpiar_ruta(ruta_excel_actual)
         
@@ -228,6 +237,7 @@ def generar_ppt_solo():
         break
     
     while True:
+        global ruta_excel_anterior
         ruta_excel_anterior = input("📄 Ruta del Excel de la SEMANA PASADA: ").strip()
         ruta_excel_anterior = limpiar_ruta(ruta_excel_anterior)
         
@@ -237,6 +247,7 @@ def generar_ppt_solo():
         break
 
     while True:
+        global ruta_plantilla
         ruta_plantilla = input("🖼️ Ruta del archivo plantilla PPTX: ").strip()
         ruta_plantilla = limpiar_ruta(ruta_plantilla)
         
@@ -244,7 +255,8 @@ def generar_ppt_solo():
             print(f"{RED}✗ Plantilla PPT no encontrada{RESET}\n")
             continue
         break
-
+    
+    global ruta_instrucciones
     ruta_instrucciones = input("📝 Ruta del archivo instrucciones.txt (Enter=omitir): ").strip()
     if ruta_instrucciones:
         ruta_instrucciones = limpiar_ruta(ruta_instrucciones)
@@ -254,6 +266,7 @@ def generar_ppt_solo():
     else:
         ruta_instrucciones = None
 
+    global ruta_salida_ppt
     ruta_salida_ppt = input("📄 Ruta de salida para el PPT (ej: output/comparativo.pptx): ").strip()
     if not ruta_salida_ppt:
         ruta_salida_ppt = "output/PPTGENERADO.pptx"

@@ -4,6 +4,7 @@ from pptx.util import Pt
 from pptx.enum.text import PP_ALIGN
 from pptx.dml.color import RGBColor
 
+
 def aplicar_operacion(excel_actual: str, archivo_nombre: str, operacion_nombre: str, operaciones_config: list, excel_anterior: str = None) -> str:
     """
     Aplica una operación a un archivo Excel y retorna el conteo formateado.
@@ -121,6 +122,7 @@ def _aplicar_filtro_simple(serie: pd.Series, valor: str) -> pd.Series:
     - *valor* = NO contiene (diferente de)
     - valor = Igual exacto
     """
+    serie =serie.fillna('vacio')
     if valor.startswith("+") and valor.endswith("+"):
         # +valor+ = Contiene
         valor_filtro = valor.strip("+")
@@ -222,22 +224,45 @@ def reemplazar_con_formato(text_frame, texto_original: str, valores: dict, excel
             if m:
                 parte_color = m.group(1)
                 parte_texto = m.group(2)
+
+                simbolo = parte_color[0]
+                numero = parte_color[1:]
             else:
                 parte_color = valor
                 parte_texto = ""
+
+                simbolo = parte_color[0]
+                numero = parte_color[1:]
             
             # Determinar color basado en símbolo Y contexto del texto
             color_op = _determinar_color_operacion(parte_color, parte_texto)
             
             # Run 1: símbolo + número (CON COLOR)
-            run_num = p.add_run()
-            run_num.text = parte_color
-            run_num.font.bold = True
-            run_num.font.size = Pt(10)
-            if color_op:
-                run_num.font.color.rgb = color_op
+            #run_num = p.add_run()
+            #run_num.text = parte_color
+            #run_num.font.bold = True
+            #run_num.font.size = Pt(10)
+            #if color_op:
+            #    run_num.font.color.rgb = color_op
+
+            run_simbolo = p.add_run()
+            run_simbolo.text = simbolo
+            run_simbolo.font.bold = True
+            run_simbolo.font.size = Pt(10)
+            color_simbolo = _determinar_color_simbolo(simbolo)
+
+            if color_simbolo:
+                run_simbolo.font.color.rgb = color_simbolo
+
+            run_numero = p.add_run()
+            run_numero.text = numero
+            run_numero.font.bold = True
+            run_numero.font.size = Pt(10)
+            color_numero = _determinar_color_operacion(parte_color, parte_texto)
             
-            # Run 2: descripción (SIN COLOR)
+            if color_numero:
+                run_numero.font.color.rgb = color_numero
+
             if parte_texto:
                 run_desc = p.add_run()
                 run_desc.text = " " + parte_texto
@@ -250,16 +275,33 @@ def reemplazar_con_formato(text_frame, texto_original: str, valores: dict, excel
             if m:
                 parte_color = m.group(1)
                 parte_texto = m.group(2)
+
+                simbolo = parte_color[0]
+                numero = parte_color[1:]
             else:
                 parte_color = valor
                 parte_texto = ""
 
-            run_num = p.add_run()
-            run_num.text = parte_color
-            run_num.font.bold = True
-            run_num.font.size = Pt(10)
-            if band_info['color']:
-                run_num.font.color.rgb = band_info['color']
+                simbolo = parte_color[0]
+                numero = parte_color[1:]
+            
+            run_simbolo = p.add_run()
+            run_simbolo.text = simbolo
+            run_simbolo.font.bold = True
+            run_simbolo.font.size = Pt(10)
+            color_simbolo = _determinar_color_simbolo(simbolo)
+
+            if color_simbolo:
+                run_simbolo.font.color.rgb = color_simbolo
+
+            run_numero = p.add_run()
+            run_numero.text = numero
+            run_numero.font.bold = True
+            run_numero.font.size = Pt(10)
+            color_numero = _determinar_color_operacion(parte_color, parte_texto)
+            
+            if color_numero:
+                run_numero.font.color.rgb = color_numero
 
             if parte_texto:
                 run_desc = p.add_run()
@@ -277,6 +319,16 @@ def reemplazar_con_formato(text_frame, texto_original: str, valores: dict, excel
         run_restante.text = texto_original[pos_actual:]
         run_restante.font.size = Pt(10)
 
+def _determinar_color_simbolo(simbolo: str):
+    if simbolo == "↑":
+        return RGBColor(192, 0, 0)
+    if simbolo == "↓":
+        return RGBColor(0, 128, 0)
+    if simbolo == "=":
+        return RGBColor(0, 112, 192)
+    
+    return None
+
 def _determinar_color_operacion(parte_color: str, parte_texto: str = "") -> RGBColor:
     """
     Determina el color basado en el símbolo y el contexto.
@@ -284,26 +336,52 @@ def _determinar_color_operacion(parte_color: str, parte_texto: str = "") -> RGBC
     """
     texto_completo = (parte_color + " " + parte_texto).lower()
     
+    #Colores:
+    #Verde: 0, 128, 0
+    #Rojo:  192, 0, 0
+    #Azul:  0, 112, 192
+    try:
+        valor = int(parte_color[1:])
+    except:
+        return None
+    
+    if valor == 0:
+        return RGBColor(0, 112, 192)
+
     # Detectar por símbolo principal
     if "↓" in parte_color:
         # Flecha hacia abajo = Disminución (Verde)
-        return RGBColor(0, 128, 0)
-    
+        return RGBColor(192, 0, 0)
+    elif "↑" in parte_color:
+        # Flecha hacia arriba = Aumento (rojo)
+        return RGBColor(192, 0, 0)
+
     # Detectar por contexto del texto
-    if "sin cambios" in texto_completo or "sin cambio" in texto_completo:
+    if ("sin cambios" in texto_completo or "sin cambio" in texto_completo) and (not "0" in texto_completo):
         # Sin cambio (Azul)
-        return RGBColor(0, 112, 192)
+        return RGBColor(192, 0, 0)
     elif "disminuci" in texto_completo or "reducid" in texto_completo:
         # Disminución (Verde)
-        return RGBColor(0, 128, 0)
+        return RGBColor(192, 0, 0)
     elif "aument" in texto_completo or "creci" in texto_completo:
         # Aumento (Rojo)
         return RGBColor(192, 0, 0)
+    elif ("disminuci" in texto_completo or "reducid" in texto_completo) and ("0" in texto_completo):
+        # Disminución (Verde)
+        return RGBColor(0, 112, 192)
+    elif "aument" in texto_completo or "creci" in texto_completo and ("0" in texto_completo):
+        # Aumento (Rojo)
+        return RGBColor(0, 112, 192)
+    # ==== Nuevo ====
+    elif ("sin cambios" in texto_completo or "sin cambio" in texto_completo) and "0" in texto_completo:
+        # Sin cambio (Azul)
+        return RGBColor(0, 112, 192)
+    # ==== Nuevo ====
     
     # Si no se puede determinar por contexto, usar símbolo
     if "=" in parte_color:
         # Símbolo "=" normalmente indica aumento
-        return RGBColor(192, 0, 0)
+        return RGBColor(0, 112, 192)
     
     # Fallback: Azul por defecto
     return RGBColor(0, 112, 192)

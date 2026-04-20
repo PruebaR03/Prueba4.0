@@ -139,6 +139,7 @@ def leer_configuracion_enriquecimiento(ruta_configuracion: str) -> Dict[str, Any
 def leer_configuracion_separacion(ruta_configuracion: str) -> dict:
     """
     Lee configuración para separar archivos Excel.
+    Soporta: exclusivo para = nombre_archivo (hoja solo va en ese archivo)
     """
     ruta_configuracion = limpiar_ruta(ruta_configuracion)
     if not os.path.exists(ruta_configuracion):
@@ -184,13 +185,23 @@ def leer_configuracion_separacion(ruta_configuracion: str) -> dict:
                     if actual_hoja:
                         hojas.append(actual_hoja)
                     nombre = l.split(":", 1)[1].strip().strip('"').strip("'")
-                    actual_hoja = {'hoja': nombre, 'columna_id': ''}
+                    actual_hoja = {
+                        'hoja': nombre, 
+                        'columna_id': '',
+                        'exclusivo_para': None
+                    }
                     continue
                 if l.lower().startswith("columna id:"):
                     if not actual_hoja:
                         continue
                     col = l.split(":", 1)[1].strip().strip('"').strip("'")
                     actual_hoja['columna_id'] = col
+                    continue
+                if l.lower().startswith("exclusivo para:"):
+                    if not actual_hoja:
+                        continue
+                    archivo = l.split(":", 1)[1].strip().strip('"').strip("'")
+                    actual_hoja['exclusivo_para'] = archivo
                     continue
 
     if actual_calc:

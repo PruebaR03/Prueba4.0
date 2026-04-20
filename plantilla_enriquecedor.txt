@@ -16,29 +16,59 @@ Parametro: version_ios_deprecada = 17
 
 Hoja: "Qualys"
 Columna base: "hostname"
-Ruta: "input/cmdb_ci_computer (27).xlsx"
+Ruta: "input/cmdb_ci_computer.xlsx"
 Columna cruzar: "Name"
-Columna extraer: "status" + "status reason"
+Columna extraer: "status" + "status reason" + "Name"
+
+Hoja: "Windows hello"
+Columna base: "user principal name"
+Ruta: "input/USER.xlsx"
+Columna cruzar: "CF - ESI - ESP Local Id"
+Columna extraer: "Job Profile"
+
+Hoja: "Windows hello"
+Columna base: "user principal name"
+Ruta: "input/cmdb_ci_computer.xlsx"
+Columna cruzar: "Employee ID"
+Columna extraer: "Name"
+
+Hoja: "Windows hello"
+Columna base: "user principal name"
+Ruta: "input/softerra.xlsx"
+Columna cruzar: "employeeNumber"
+Columna extraer: "title" + "company_softerra"
+
+Hoja: "MFA"
+Columna base: "user principal name"
+Ruta: "input/softerra.xlsx"
+Columna cruzar: "employeeNumber"
+Columna extraer: "title" + "company_softerra"
+
+Hoja: "MFA"
+Columna base: "user principal name"
+Ruta: "input/cmdb_ci_computer.xlsx"
+Columna cruzar: "Employee ID"
+Columna extraer: "Name"
 
 Hoja: "Harmony"
 Columna base: "username"
-Ruta: "input/USER(NO QUITAR, CAMBIAR).xlsx"
-Columna cruzar: "Usuario"
-Columna extraer: "Nombre" + "OU"
+Ruta: "input/USER.xlsx"
+Columna cruzar: "CF - ESI - ESP Local Id"
+Columna extraer: "Legal Name" + "Company - ID"
 
 
 Hoja: "MTD"
 Columna base: "username"
-Ruta: "input/USER(NO QUITAR, CAMBIAR).xlsx"
-Columna cruzar: "Usuario"
-Columna extraer: "Nombre"
+Ruta: "input/USER.xlsx"
+Columna cruzar: "CF - ESI - ESP Local Id"
+Columna extraer: "Legal Name"
 
 
 Hoja: "MTD client version"
 Columna base: "username"
-Ruta: "input/USER(NO QUITAR, CAMBIAR).xlsx"
-Columna cruzar: "Usuario"
-Columna extraer: "Nombre"
+Ruta: "input/USER.xlsx"
+Columna cruzar: "CF - ESI - ESP Local Id"
+Columna extraer: "Legal Name"
 
 
 # ================== MOVILES ==================
@@ -58,9 +88,9 @@ Columna calcular: deprecado = SI( O( Y( O( os="Android (Fully Managed)"; os="And
 # 3) OU desde archivo de usuarios
 Hoja: "Moviles"
 Columna base: "primary user upn"
-Ruta: "input/USER(NO QUITAR, CAMBIAR).xlsx"
-Columna cruzar: "Usuario"
-Columna extraer: "OU" 
+Ruta: "input/USER.xlsx"
+Columna cruzar: "CF - ESI - ESP Local Id"
+Columna extraer: "Company - ID" 
 
 # ================== ENRIQUECIMIENTO DE HOJAS RESUMEN ==================
 # Los resúmenes se pueden enriquecer igual que cualquier otra hoja
@@ -68,7 +98,7 @@ Columna extraer: "OU"
 
 Hoja: "Resumen_Workstations"
 Columna base: "ID"
-Ruta: "input/cmdb_ci_computer (27).xlsx"
+Ruta: "input/cmdb_ci_computer.xlsx"
 Columna cruzar: "Name"
 Columna extraer: "Employee ID" + "Assigned to"
 

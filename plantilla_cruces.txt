@@ -1,0 +1,21 @@
+input_base: input/Qualys-workstations-Details-Colombia-2026-02-23.xlsx
+input_enrriquecer: "input/cmdb_ci_computer.xlsx"
+Columna_base: hostname
+Columna_cruzar: Name
+Columna_extraer: CI ID
+output: input/Qualys-workstations-Details-Colombia-2026-02-23.xlsx
+
+input_base: input/DevicesWithInventory_17d7d4d0-3dec-440b-833c-987f0c3a62d0.csv
+input_enrriquecer: "input/softerra.xlsx"
+Columna_base: Primary user email address
+Columna_cruzar: mail
+Columna_extraer: company_softerra
+output: input/DevicesWithInventory_17d7d4d0-3dec-440b-833c-987f0c3a62d0.xlsx
+
+input_base: input/DevicesWithInventory_17d7d4d0-3dec-440b-833c-987f0c3a62d0.xlsx
+input_enrriquecer: "input/MOVILES OS(NO QUITAR, CAMBIAR).xlsx"
+Columna_base: Model
+Columna_cruzar: dispositivo
+Columna_extraer: ultima actualizacion
+Columna_calcular: os_al_dia = CompCol -> columnaA=os version , columnaB=ultima actualizacion , result=actualizado , operacion=>= ; CompCol -> columnaA=os version , columnaB=ultima actualizacion , result=desactualizado , operacion=< ; Else -> Error"
+output: input/DevicesWithInventory_17d7d4d0-3dec-440b-833c-987f0c3a62d0.xlsx

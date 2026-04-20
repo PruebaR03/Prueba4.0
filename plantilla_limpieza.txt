@@ -26,9 +26,19 @@
 # - compliance contiene "Compliant" (o igual a "Compliant")
 
 Hoja: "Moviles"
-Eliminar si: os al dia = +actualizado+ &&
+Eliminar si: os al dia = "actualizado" &&
 Eliminar si: deprecado = "OK" &&
-Eliminar si: compliance = +Compliant+
+Eliminar si: compliance = "Compliant"
+
+Hoja: "Windows hello"
+Eliminar si: job profile = +Customer Sales & Support+ ||
+Eliminar si: title = +Customer Sales & Support+ ||
+Eliminar si: job profile = +SANCO+ ||
+Eliminar si: name = +SANCO+ 
+
+
+
+
 
 # NOTA: Estamos eliminando los dispositivos que ESTÁN BIEN (actualizados, OK, compliant)
 # Para quedarnos solo con los que NECESITAN ATENCIÓN (desactualizados, deprecados, no compliant)
