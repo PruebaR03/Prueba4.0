@@ -136,7 +136,7 @@ def _aplicar_filtro_simple(serie: pd.Series, valor: str) -> pd.Series:
         # Valor exacto
         return serie.astype(str).str.strip() == valor
 
-def reemplazar_con_formato(text_frame, texto_original: str, valores: dict, excel_actual: str = None, excel_anterior: str = None, instrucciones: list = None):
+def reemplazar_con_formato(text_frame, texto_original: str, valores: dict, excel_actual: str = None, excel_anterior: str = None, instrucciones: list = None,resumen_cumplimiento_map: dict = None):
     """
     Reemplaza banderas manteniendo colores y formato original.
     Soporta banderas con operaciones: <<nombre(operacion)>>
@@ -194,6 +194,7 @@ def reemplazar_con_formato(text_frame, texto_original: str, valores: dict, excel
                     'bandera_norm': bandera_norm,
                     'valor': str(valores_norm[bandera_norm]),
                     'color': valores_norm.get(f'{bandera_norm}_color'),
+                    'status': valores_norm.get(f'{bandera_norm}_status'),
                     'es_operacion': False
                 })
 
@@ -269,45 +270,76 @@ def reemplazar_con_formato(text_frame, texto_original: str, valores: dict, excel
                 run_desc.font.bold = False
                 run_desc.font.size = Pt(9)
         else:
-            # Bandera normal: separar símbolo+número de descripción
-            m = re.match(r'^\s*([=↑↓]\s*\d+)\s*(.*)$', valor)
-            
-            if m:
-                parte_color = m.group(1)
-                parte_texto = m.group(2)
+            # Caso especial: placeholders de cumplimiento -- Nuevo  
+            if band_info['bandera_norm'].endswith('_cumplimiento'):
+                valor_texto = str(valor).strip()
 
-                simbolo = parte_color[0]
-                numero = parte_color[1:]
+                status = band_info.get('status')
+                if not status:
+                    partes = [p.strip() for p in valor_texto.split("/")]
+                    status = partes[-1] if len(partes) > 1 else "N/A"
+
+                partes = [p.strip() for p in valor_texto.split("/", 1)]
+
+                cumplimiento_txt = partes[0] if len(partes) > 0 and partes[0] else "N/A"
+                status_txt = partes[1] if len(partes) > 1 and partes[1] else "N/A"
+
+                run_cumplimiento = p.add_run()
+                run_cumplimiento.text = cumplimiento_txt
+                run_cumplimiento.font.bold = False
+                run_cumplimiento.font.size = Pt(10)
+
+                run_sep = p.add_run()
+                run_sep.text = " / "
+                run_sep.font.bold = False
+                run_sep.font.size = Pt(10)
+
+                run_status = p.add_run()
+                run_status.text = status_txt
+                run_status.font.bold = True
+                run_status.font.size = Pt(10)
+                run_status.font.color.rgb = _determinar_color_status(status_txt)
+
             else:
-                parte_color = valor
-                parte_texto = ""
+                # Bandera normal: separar símbolo+número de descripción
+                m = re.match(r'^\s*([=↑↓]\s*\d+)\s*(.*)$', valor)
+                
+                if m:
+                    parte_color = m.group(1)
+                    parte_texto = m.group(2)
 
-                simbolo = parte_color[0]
-                numero = parte_color[1:]
-            
-            run_simbolo = p.add_run()
-            run_simbolo.text = simbolo
-            run_simbolo.font.bold = True
-            run_simbolo.font.size = Pt(10)
-            color_simbolo = _determinar_color_simbolo(simbolo)
+                    simbolo = parte_color[0]
+                    numero = parte_color[1:]
+                else:
+                    parte_color = valor
+                    parte_texto = ""
 
-            if color_simbolo:
-                run_simbolo.font.color.rgb = color_simbolo
+                    simbolo = parte_color[0]
+                    numero = parte_color[1:]
+                
+                run_simbolo = p.add_run()
+                run_simbolo.text = simbolo
+                run_simbolo.font.bold = True
+                run_simbolo.font.size = Pt(10)
+                color_simbolo = _determinar_color_simbolo(simbolo)
 
-            run_numero = p.add_run()
-            run_numero.text = numero
-            run_numero.font.bold = True
-            run_numero.font.size = Pt(10)
-            color_numero = _determinar_color_operacion(parte_color, parte_texto)
-            
-            if color_numero:
-                run_numero.font.color.rgb = color_numero
+                if color_simbolo:
+                    run_simbolo.font.color.rgb = color_simbolo
 
-            if parte_texto:
-                run_desc = p.add_run()
-                run_desc.text = " " + parte_texto
-                run_desc.font.bold = False
-                run_desc.font.size = Pt(9)
+                run_numero = p.add_run()
+                run_numero.text = numero
+                run_numero.font.bold = True
+                run_numero.font.size = Pt(10)
+                color_numero = _determinar_color_operacion(parte_color, parte_texto)
+                
+                if color_numero:
+                    run_numero.font.color.rgb = color_numero
+
+                if parte_texto:
+                    run_desc = p.add_run()
+                    run_desc.text = " " + parte_texto
+                    run_desc.font.bold = False
+                    run_desc.font.size = Pt(9)
 
         print(f"                        ✓ <<{band_info['bandera']}>> → {valor}")
         
@@ -318,7 +350,26 @@ def reemplazar_con_formato(text_frame, texto_original: str, valores: dict, excel
         run_restante = p.add_run()
         run_restante.text = texto_original[pos_actual:]
         run_restante.font.size = Pt(10)
+#Colores dependiendo del estatus de cumplimiento (Cumple, No Cumple, N/A)
+def _determinar_color_status(status: str):
+    """
+    Colores para estatus de cumplimiento:
+    - Cumple -> verde
+    - No Cumple -> rojo
+    - N/A o vacío -> negro
+    """
+    if not status:
+        return RGBColor(0, 0, 0)
 
+    status_norm = str(status).strip().lower()
+
+    if status_norm in ("ok", "cumple"):
+        return RGBColor(0, 128, 0)
+    elif status_norm in ("failed", "no cumple", "nocumple"):
+        return RGBColor(192, 0, 0)
+    else:
+        return RGBColor(0, 0, 0)
+    
 def _determinar_color_simbolo(simbolo: str):
     if simbolo == "↑":
         return RGBColor(192, 0, 0)

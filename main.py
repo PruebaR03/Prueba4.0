@@ -25,6 +25,8 @@ ruta_excel_actual =None
 ruta_excel_anterior =None
 ruta_plantilla= None
 ruta_salida_ppt= None
+ruta_resumen_cumplimiento = None #Nueva ruta para el mapeo del excel de cumplimiento --Nuevo
+
 
 
 def main():
@@ -266,6 +268,16 @@ def generar_ppt_solo():
     else:
         ruta_instrucciones = None
 
+    #Nueva funcion para recibir la ruta del excel de cumplimiento, si no se ingresa, se omite el estatus de cumplimiento en el ppt comparativo -- Nuevo
+        global ruta_resumen_cumplimiento
+    ruta_resumen_cumplimiento = input("📊 Ruta del archivo resumen_cumplimiento.xlsx (Enter=omitir): ").strip()
+    if ruta_resumen_cumplimiento:
+        ruta_resumen_cumplimiento = limpiar_ruta(ruta_resumen_cumplimiento)
+        if not os.path.exists(ruta_resumen_cumplimiento):
+            print(f"{YELLOW}⚠️  Archivo resumen_cumplimiento no encontrado, continuando sin estatus de cumplimiento{RESET}")
+            ruta_resumen_cumplimiento = None
+    else:
+        ruta_resumen_cumplimiento = None
     global ruta_salida_ppt
     ruta_salida_ppt = input("📄 Ruta de salida para el PPT (ej: output/comparativo.pptx): ").strip()
     if not ruta_salida_ppt:
@@ -283,7 +295,7 @@ def generar_ppt_solo():
     
     try:
         print(f"\n{GREEN}Generando presentación comparativa...{RESET}")
-        generar_ppt_comparativo(ruta_excel_actual, ruta_excel_anterior, ruta_plantilla, ruta_salida_ppt, ruta_instrucciones)
+        generar_ppt_comparativo(ruta_excel_actual, ruta_excel_anterior, ruta_plantilla, ruta_salida_ppt, ruta_instrucciones,ruta_resumen_cumplimiento)
         print(f"\n{GREEN}{'═' * 60}")
         print(f"✅ PRESENTACIÓN GENERADA EXITOSAMENTE")
         print(f"📁 Ubicación: {ruta_salida_ppt}")
